@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '25.0.0'
+    compileSdkVersion 25
+    buildToolsVersion '25.0.2'
 
     defaultConfig {
         applicationId "upsoft.ble.IndoorPos"
         minSdkVersion 18
-        targetSdkVersion 22
+        targetSdkVersion 25
     }
 
     buildTypes {
@@ -16,8 +16,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
+    sourceSets{
+        main{
+            jniLibs.srcDirs=['libs']
+        }
+    }
 }
 
 dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile files('libs/commons-io-2.4.jar')
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile files('libs/usc.jar')
+    compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
 }

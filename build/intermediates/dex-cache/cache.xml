@@ -3,6 +3,33 @@
 
     <item
         is-multidex="false"
+        jar="G:\GitHub\IndoorPos\app\libs\usc.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.2"
+        sha1="f80ff559cc82a38a4e80149a5c4f1018d1454e29">
+        <dex dex="G:\GitHub\IndoorPos\app\build\intermediates\pre-dexed\debug\usc_bae15a71e382ccd17a769f589a7ca5814b1872c2.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="G:\GitHub\IndoorPos\app\libs\commons-io-2.4.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.2"
+        sha1="b1b6ea3b7e4aa4f492509a4952029cd8e48019ad">
+        <dex dex="G:\GitHub\IndoorPos\app\build\intermediates\pre-dexed\debug\commons-io-2.4_49491a6390f9120a67530e8a126a50c78c59ff26.jar" />
+    </item>
+    <item
+        is-multidex="false"
+        jar="C:\Users\yangzhou\.gradle\caches\modules-2\files-2.1\org.jbundle.util.osgi.wrapped\org.jbundle.util.osgi.wrapped.org.apache.http.client\4.1.2\98c86e42679fe7ac066f6c242e0d14f0bce0bb7c\org.jbundle.util.osgi.wrapped.org.apache.http.client-4.1.2.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="25.0.2"
+        sha1="98c86e42679fe7ac066f6c242e0d14f0bce0bb7c">
+        <dex dex="G:\GitHub\IndoorPos\app\build\intermediates\pre-dexed\debug\org.jbundle.util.osgi.wrapped.org.apache.http.client-4.1.2_975a08910e7f0478be9afd53a8e8132695151499.jar" />
+    </item>
+    <item
+        is-multidex="false"
         jar="G:\GitHub\IndoorPos\app\libs\commons-io-2.4.jar"
         jumboMode="false"
         optimize="true"

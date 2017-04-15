@@ -7,8 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-
-import upsoft.ble.iBeaconPos.R;
+import upsoft.ble.indoorPos.R;
 
 /**
  * Created by yangzhou on 2017/4/15.
