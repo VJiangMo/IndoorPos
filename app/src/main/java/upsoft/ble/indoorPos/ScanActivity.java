@@ -2,6 +2,8 @@ package upsoft.ble.indoorPos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
 import upsoft.ble.util.BleUtil;
 import upsoft.ble.util.DataStore;
 import upsoft.ble.util.OfflineSpeechUtil;
@@ -53,6 +55,28 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
                 case 0x0101:{
                     String locationStr=(String)msg.obj;
                     showLocation(locationStr);
+                    break;
+                }
+                case 0x0102:{
+                    String unkownLocation=mContext.getResources().getString(R.string.unkown_location_str);
+                    showLocation(unkownLocation);
+                    getActionBar().setSubtitle(null);
+                    break;
+                }
+                case 0x0103:{
+                    if(mDeviceAdapter!=null){
+                        List<ScannedDevice> deleteList=(List<ScannedDevice>)msg.obj;
+                        String locationStr=mLocationTv.getText().toString();
+                        for(ScannedDevice device:deleteList){
+                            String alias=mDataStore.readData(device.getDisplayName());
+                            if(alias.equals(locationStr)){
+                                String unkownLocation=mContext.getResources().getString(R.string.unkown_location_str);
+                                showLocation(unkownLocation);
+                                break;
+                            }
+                        }
+                        mDeviceAdapter.removeList(deleteList);
+                    }
                     break;
                 }
             }
@@ -275,6 +299,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
     }
 
     private void startScan() {
+        mDeviceAdapter.startLocationThread();
         if ((mBTAdapter != null) && (!mIsScanning)) {
             mBTAdapter.startLeScan(this);
             mIsScanning = true;
@@ -284,6 +309,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
     }
 
     private void stopScan() {
+        mDeviceAdapter.stopLocationThread();
         if (mBTAdapter != null) {
             mBTAdapter.stopLeScan(this);
         }

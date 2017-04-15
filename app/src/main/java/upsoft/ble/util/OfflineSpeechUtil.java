@@ -8,6 +8,8 @@ import cn.yunzhisheng.tts.offline.TTSPlayerListener;
 import cn.yunzhisheng.tts.offline.basic.ITTSControl;
 import cn.yunzhisheng.tts.offline.basic.TTSFactory;
 
+import static java.lang.Thread.sleep;
+
 /**
  * Created by yangzhou on 2017/4/15.
  */
@@ -59,7 +61,7 @@ public class OfflineSpeechUtil implements TTSPlayerListener {
      * @author JPH
      * @date 2015-4-14 下午7:29:24
      */
-    public void play(String content) {
+    public void play(final String content) {
         mTTSPlayer.play(content);
     }
 

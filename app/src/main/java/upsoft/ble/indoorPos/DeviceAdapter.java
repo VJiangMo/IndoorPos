@@ -1,6 +1,7 @@
 package upsoft.ble.indoorPos;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -33,63 +34,140 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
     private LocationThread mLocationThread;//定位线程
     private Handler mLocationHandler;
 
+    public void startLocationThread(){
+        mLocationThread.startRun();
+    }
+
+    public void stopLocationThread(){
+        mLocationThread.stopRun();
+    }
+
     private class LocationThread extends Thread{
         private boolean mRunFlag=true;
         private double mMinDistance=0.0f;//0米
         private String mMinDistanceAlias="";
+        private String mLastSpeakContent="";
+        private boolean mIsWait0=false;
+        private boolean mIsWait1=false;
 
         public LocationThread(){
             super();
         }
-        public void stopLocationThread(){
+        public void startRun(){
+            mRunFlag=true;
+        }
+        public void stopRun(){
             mRunFlag=false;
         }
         @Override
         public void run() {
-            while(mRunFlag){
-                mMinDistance=0.0f;
-                mMinDistanceAlias=mContext.getResources().getString(R.string.unkown_location_str);
+            while(true) {
+                mMinDistance = 0.0f;
+                mMinDistanceAlias = mContext.getResources().getString(R.string.unkown_location_str);
+                List<ScannedDevice> deleteList=new ArrayList<ScannedDevice>();
 
                 try {
-                    Thread.sleep(4000);
+                    Thread.sleep(5100);//线程休眠5100ms
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                //计算出距离最小的定位点
-                if (mList != null) {
-                    for (ScannedDevice device : mList) {
-                        if (device.getIBeacon() != null) {
-                            double deviceDistance=device.getDistance();
-                            String deviceName=device.getDisplayName();
-                            Log.d("++++++Distance","deviceDistance:"+deviceDistance+",\n"+
-                                    "deviceName:"+deviceName+"\n");
-                            if(mMinDistance<0.00001f){
-                                mMinDistance=deviceDistance;
-                                mMinDistanceAlias=mDataStore.readData(deviceName);
+
+                if(mRunFlag) {
+                    //计算出距离最小的定位点
+                    int ibeaconCount = 0;
+                    if (mList != null) {
+                        for (ScannedDevice device : mList) {
+                            long now = System.currentTimeMillis();
+                            if(now-device.getLastUpdatedMs()>5000){//说明蓝牙设备已经离线
+                                deleteList.add(device);
                             }
-                            if(mMinDistance>deviceDistance){
-                                mMinDistance=deviceDistance;
-                                mMinDistanceAlias=mDataStore.readData(deviceName);
+                            if (device.getIBeacon() != null) {//当前蓝牙设备为ibeacon设备
+                                ibeaconCount++;
+                                double deviceDistance = device.getDistance();
+                                String deviceName = device.getDisplayName();
+                                Log.d("++++++Distance", "deviceDistance:" + deviceDistance + ",\n" +
+                                        "deviceName:" + deviceName + "\n");
+                                if (mMinDistance < 0.00001f) {
+                                    mMinDistance = deviceDistance;
+                                    mMinDistanceAlias = mDataStore.readData(deviceName);
+                                }
+                                if (mMinDistance > deviceDistance) {
+                                    mMinDistance = deviceDistance;
+                                    mMinDistanceAlias = mDataStore.readData(deviceName);
+                                }
                             }
                         }
+                        Log.d("++", "-------------------");
+                        Log.d("++++++minDistance", "mMinDistance:" + mMinDistance + ",\n" +
+                                "mMinDistanceAlias:" + mMinDistanceAlias + "\r\n");
                     }
-                    Log.d("++","-------------------");
-                    Log.d("++++++minDistance","mMinDistance:"+mMinDistance+",\n"+
-                            "mMinDistanceAlias:"+mMinDistanceAlias+"\r\n");
-                }
-                //判断是否播报
-                if(mMinDistance<1.0f){
-                    //刷新界面
-                    Message msg=new Message();
-                    msg.what=0x0101;
-                    msg.obj=mMinDistanceAlias;
-                    mLocationHandler.sendMessage(msg);
-                    //语音播报
-                    String speechContent=mContext.getResources().getString(R.string.now_location_str)+mMinDistanceAlias;
-                    mSpeechUtil.play(speechContent);
+                    //判断是否播报
+                    if (mMinDistance < 1.0f && ibeaconCount > 0) {
+                        //刷新界面
+                        Message msg = new Message();
+                        msg.what = 0x0101;
+                        msg.obj = mMinDistanceAlias;
+                        mLocationHandler.sendMessage(msg);
+                        //语音播报
+                        String speechContent = mContext.getResources().getString(R.string.now_location_str) + mMinDistanceAlias;
+                        if(!mLastSpeakContent.equals(speechContent)){
+                            mSpeechUtil.play(speechContent);
+                            mLastSpeakContent=speechContent;
+                        }else if(!mIsWait0){
+                            mIsWait0=true;
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        Thread.sleep(1000*5);
+                                        mLastSpeakContent="";
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    mIsWait0=false;
+                                }
+                            }).start();
+                        }
+                    } else if (0 == ibeaconCount) {
+                        Message msg = new Message();
+                        msg.what = 0x0102;
+                        mLocationHandler.sendMessage(msg);
+                        //语音播报:未搜索到定位设备
+                        String speechContent = mContext.getResources().getString(R.string.have_no_location_device_str);
+                        if(!mLastSpeakContent.equals(speechContent)){
+                            mSpeechUtil.play(speechContent);
+                            mLastSpeakContent=speechContent;
+                        }else if(!mIsWait1){
+                            mIsWait1=true;
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        Thread.sleep(1000*5);
+                                        mLastSpeakContent="";
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    mIsWait1=false;
+                                }
+                            }).start();
+                        }
+                    }
+                    //判断是否要清除数据
+                    if(deleteList.size()>0){
+                        Message msg = new Message();
+                        msg.what = 0x0103;
+                        msg.obj=deleteList;
+                        mLocationHandler.sendMessage(msg);
+                    }
                 }
             }
         }
+    }
+
+    public void removeList(List<ScannedDevice> deleteList){
+        mList.removeAll(deleteList);
+        notifyDataSetChanged();
     }
 
     public DeviceAdapter(Context context, int resId, List<ScannedDevice> objects,
@@ -114,46 +192,59 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ScannedDevice item = (ScannedDevice) getItem(position);
+        ViewHolder holder=null;
 
         if (convertView == null) {
             convertView = mInflater.inflate(mResId, null);
+            holder=new ViewHolder(convertView);
+            convertView.setTag(holder);
+        }else {
+            holder = (ViewHolder)convertView.getTag();
         }
 
-        TextView aliasName=(TextView)convertView.findViewById(R.id.device_alias_name);
         String aliasStr= mDataStore.readData(getDeviceName(position));
-        aliasName.setText(aliasStr);
-
-        TextView name = (TextView) convertView.findViewById(R.id.device_name);
-        name.setText(item.getDisplayName());
-
-        TextView address = (TextView) convertView.findViewById(R.id.device_address);
-        address.setText(item.getDevice().getAddress());
-
-        TextView rssi = (TextView) convertView.findViewById(R.id.device_rssi);
-        rssi.setText(PREFIX_RSSI + Integer.toString(item.getRssi()));
-
-        TextView lastupdated = (TextView) convertView.findViewById(R.id.device_lastupdated);
-        lastupdated.setText(PREFIX_LASTUPDATED + DateUtil.get_yyyyMMddHHmmssSSS(item.getLastUpdatedMs()));
-
-        TextView distance=(TextView) convertView.findViewById(R.id.distance_tv);
+        holder.aliasName.setText(aliasStr);
+        holder.name.setText(item.getDisplayName());
+        holder.address.setText(item.getDevice().getAddress());
+        holder.rssi.setText(PREFIX_RSSI + Integer.toString(item.getRssi()));
+        holder.lastupdated.setText(PREFIX_LASTUPDATED + DateUtil.get_yyyyMMddHHmmssSSS(item.getLastUpdatedMs()));
         DecimalFormat df=new DecimalFormat("0.00000");
-        distance.setText(df.format(item.getDistance()));
+        holder.distance.setText(df.format(item.getDistance()));
 
-        TextView ibeaconInfo = (TextView) convertView.findViewById(R.id.device_ibeacon_info);
         Resources res = convertView.getContext().getResources();
         if (item.getIBeacon() != null) {
-            ibeaconInfo.setText(res.getString(R.string.label_ibeacon) + "\n"
+            holder.ibeaconInfo.setText(res.getString(R.string.label_ibeacon) + "\n"
                     + item.getIBeacon().toString());
-            ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.holo_blue_dark));
+            holder.ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.holo_blue_dark));
         } else {
-            ibeaconInfo.setText(res.getString(R.string.label_not_ibeacon));
-            ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.red));
+            holder.ibeaconInfo.setText(res.getString(R.string.label_not_ibeacon));
+            holder.ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.red));
         }
-
-        TextView scanRecord = (TextView) convertView.findViewById(R.id.device_scanrecord);
-        scanRecord.setText(item.getScanRecordHexString());
+        holder.scanRecord.setText(item.getScanRecordHexString());
 
         return convertView;
+    }
+
+    private class ViewHolder{
+        public TextView aliasName;
+        public TextView name;
+        public TextView address;
+        public TextView rssi;
+        public TextView lastupdated;
+        public TextView distance;
+        public TextView ibeaconInfo;
+        public TextView scanRecord;
+
+        public ViewHolder(View convertView){
+            aliasName=(TextView)convertView.findViewById(R.id.device_alias_name);
+            name= (TextView) convertView.findViewById(R.id.device_name);
+            address= (TextView) convertView.findViewById(R.id.device_address);
+            rssi= (TextView) convertView.findViewById(R.id.device_rssi);
+            lastupdated= (TextView) convertView.findViewById(R.id.device_lastupdated);
+            distance=(TextView) convertView.findViewById(R.id.distance_tv);
+            ibeaconInfo = (TextView) convertView.findViewById(R.id.device_ibeacon_info);
+            scanRecord = (TextView) convertView.findViewById(R.id.device_scanrecord);
+        }
     }
 
     /**

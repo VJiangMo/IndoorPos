@@ -18,6 +18,7 @@
     <string name="juli_str">定位设备距离：</string>
     <string name="juli_danwei_str">米</string>
     <string name="now_location_str">已到达：</string>
+    <string name="have_no_location_device_str">未搜索到定位设备</string>
 
     <!-- Scan -->
     <string name="action_scan">搜索</string>
