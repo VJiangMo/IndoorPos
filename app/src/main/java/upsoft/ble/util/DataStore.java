@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import upsoft.ble.indoorPos.R;
+
 /**
  * Created by yangzhou on 2017/4/15.
  */
@@ -35,7 +37,7 @@ public class DataStore {
     }
 
     public String readData(String key){
-        String res=mSharedPreferences.getString(key,"");
+        String res=mSharedPreferences.getString(key,mContext.getResources().getString(R.string.unkown_location_str));
         return res;
     }
 }
