@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">iBeaconPos</string>
-    <string name="ble_not_supported">BLE not supported on this device.</string>
-    <string name="bt_not_supported">Bluetooth not supported on this device.</string>
-    <string name="bt_not_enabled">Bluetooth is not enabled, turn it on.</string>
-    <string name="label_ibeacon">This is iBeacon!</string>
-    <string name="label_not_ibeacon">This is not iBeacon.</string>
-    <string name="device_alias_name">device alias name:</string>
+    <string name="app_name">室内定位系统</string>
+    <string name="welcome">欢迎使用扬讯室内定位系统。</string>
+    <string name="ble_not_supported">当前设备不支持BLE.</string>
+    <string name="bt_not_supported">当前设备不支持蓝牙。</string>
+    <string name="bt_not_enabled">蓝牙不可用，请打开蓝牙。</string>
+    <string name="label_ibeacon">这是定位设备!</string>
+    <string name="label_not_ibeacon">这不是定位设备。</string>
+    <string name="device_alias_name">定位设备别名：</string>
+    <string name="now_device_alias_name">当前定位设备别名：</string>
+    <string name="device_alias_str">请设置设备别名！</string>
+    <string name="location_str">当前定位：</string>
+    <string name="unkown_location_str">未知地点</string>
+    <string name="set_tip_str">请设置定位设备别名：</string>
+    <string name="set_str">设置</string>
+    <string name="cancle_str">取消</string>
+    <string name="juli_str">定位设备距离：</string>
+    <string name="juli_danwei_str">米</string>
+    <string name="now_location_str">已到达：</string>
+
     <!-- Scan -->
-    <string name="action_scan">scan</string>
-    <string name="action_stop">stop</string>
+    <string name="action_scan">搜索</string>
+    <string name="action_stop">停止</string>
 </resources>

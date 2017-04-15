@@ -4,13 +4,16 @@ import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
 import upsoft.ble.util.DataStore;
 import upsoft.ble.util.DateUtil;
+import upsoft.ble.util.OfflineSpeechUtil;
 import upsoft.ble.util.ScannedDevice;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,14 +29,81 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
     private int mResId;
     private Context mContext;
     private DataStore mDataStore;
+    private OfflineSpeechUtil mSpeechUtil;
+    private LocationThread mLocationThread;//定位线程
+    private Handler mLocationHandler;
 
-    public DeviceAdapter(Context context, int resId, List<ScannedDevice> objects, DataStore dataStore) {
+    private class LocationThread extends Thread{
+        private boolean mRunFlag=true;
+        private double mMinDistance=0.0f;//0米
+        private String mMinDistanceAlias="";
+
+        public LocationThread(){
+            super();
+        }
+        public void stopLocationThread(){
+            mRunFlag=false;
+        }
+        @Override
+        public void run() {
+            while(mRunFlag){
+                mMinDistance=0.0f;
+                mMinDistanceAlias=mContext.getResources().getString(R.string.unkown_location_str);
+
+                try {
+                    Thread.sleep(4000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                //计算出距离最小的定位点
+                if (mList != null) {
+                    for (ScannedDevice device : mList) {
+                        if (device.getIBeacon() != null) {
+                            double deviceDistance=device.getDistance();
+                            String deviceName=device.getDisplayName();
+                            Log.d("++++++Distance","deviceDistance:"+deviceDistance+",\n"+
+                                    "deviceName:"+deviceName+"\n");
+                            if(mMinDistance<0.00001f){
+                                mMinDistance=deviceDistance;
+                                mMinDistanceAlias=mDataStore.readData(deviceName);
+                            }
+                            if(mMinDistance>deviceDistance){
+                                mMinDistance=deviceDistance;
+                                mMinDistanceAlias=mDataStore.readData(deviceName);
+                            }
+                        }
+                    }
+                    Log.d("++","-------------------");
+                    Log.d("++++++minDistance","mMinDistance:"+mMinDistance+",\n"+
+                            "mMinDistanceAlias:"+mMinDistanceAlias+"\r\n");
+                }
+                //判断是否播报
+                if(mMinDistance<1.0f){
+                    //刷新界面
+                    Message msg=new Message();
+                    msg.what=0x0101;
+                    msg.obj=mMinDistanceAlias;
+                    mLocationHandler.sendMessage(msg);
+                    //语音播报
+                    String speechContent=mContext.getResources().getString(R.string.now_location_str)+mMinDistanceAlias;
+                    mSpeechUtil.play(speechContent);
+                }
+            }
+        }
+    }
+
+    public DeviceAdapter(Context context, int resId, List<ScannedDevice> objects,
+                         OfflineSpeechUtil speech, DataStore dataStore,Handler handler) {
         super(context, resId, objects);
         mContext=context;
         mResId = resId;
         mList = objects;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mSpeechUtil=speech;
         mDataStore=dataStore;
+        mLocationHandler=handler;
+        mLocationThread=new LocationThread();
+        mLocationThread.start();
     }
 
     String getDeviceName(int position){

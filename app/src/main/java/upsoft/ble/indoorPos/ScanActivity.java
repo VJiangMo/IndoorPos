@@ -2,19 +2,18 @@ package upsoft.ble.indoorPos;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import upsoft.ble.util.BleUtil;
 import upsoft.ble.util.DataStore;
 import upsoft.ble.util.OfflineSpeechUtil;
 import upsoft.ble.util.ScannedDevice;
 import upsoft.ble.widget.CustomDialog;
-
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -25,8 +24,8 @@ import android.widget.ListView;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
+import android.widget.TextView;
 import android.widget.Toast;
-
 import static upsoft.ble.util.OfflineSpeechUtil.singleton;
 
 public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCallback {
@@ -38,6 +37,27 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
     private CustomDialog mCustomDialog;
     private DataStore mDataStore;
     private OfflineSpeechUtil mSpeechUtil;
+    private TextView mLocationTv;
+    private LocationHandler mLocationHandler;
+
+    private class LocationHandler extends  Handler {
+        public LocationHandler(){
+            super();
+        }
+        public LocationHandler(Looper looper){
+            super(looper);
+        }
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what){
+                case 0x0101:{
+                    String locationStr=(String)msg.obj;
+                    showLocation(locationStr);
+                    break;
+                }
+            }
+        }
+    }
 
     // 定义一个变量，来标识是否退出
     private static boolean isExit = false;
@@ -54,6 +74,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_scan);
+        mLocationTv=(TextView)findViewById(R.id.location_tv);
 
         init();
         startScan();//auto scan when inited.
@@ -67,6 +88,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
             Toast.makeText(this, R.string.bt_not_enabled, Toast.LENGTH_SHORT).show();
             invalidateOptionsMenu();
         }
+        startScan();
     }
 
     @Override
@@ -156,9 +178,19 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
         });
     }
 
+    private void showLocation(String location){
+        mLocationTv.setText(location);
+        if(location.equals(mContext.getResources().getString(R.string.unkown_location_str))){
+            mLocationTv.setTextColor(mContext.getResources().getColor(R.color.black));
+        }else {
+            mLocationTv.setTextColor(mContext.getResources().getColor(R.color.holo_green_dark));
+        }
+    }
+
     private void init() {
         mContext=this;
         mDataStore=new DataStore(mContext);
+        mLocationHandler=new LocationHandler();
         initSpeek();
 
         // BLE check
@@ -182,7 +214,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
         // init listview
         ListView deviceListView = (ListView) findViewById(R.id.list);
         mDeviceAdapter = new DeviceAdapter(this, R.layout.listitem_device,
-                new ArrayList<ScannedDevice>(),mDataStore);
+                new ArrayList<ScannedDevice>(),mSpeechUtil,mDataStore,mLocationHandler);
         deviceListView.setAdapter(mDeviceAdapter);
         deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

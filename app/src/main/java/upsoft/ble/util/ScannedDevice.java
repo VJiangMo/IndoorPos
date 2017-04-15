@@ -20,11 +20,11 @@ public class ScannedDevice {
     private IBeacon mIBeacon;
     /** last updated (Advertise scanned) */
     private long mLastUpdatedMs;
+    /**diatance of bluetoothdevice**/
+    private double mDistance;
 
     public double getDistance(){
-        int textPower=mIBeacon.getTxPower();
-        double rssi=mIBeacon.getRssi();
-        return mIBeacon.calculateAccuracy(textPower,rssi);
+       return mDistance;
     }
 
     public ScannedDevice(BluetoothDevice device, int rssi, byte[] scanRecord, long now) {
@@ -45,6 +45,8 @@ public class ScannedDevice {
     private void checkIBeacon() {
         if (mScanRecord != null) {
             mIBeacon = IBeacon.fromScanData(mScanRecord, mRssi);
+            int textPower=mIBeacon.getTxPower();
+            mDistance= mIBeacon.calculateAccuracy(textPower,mRssi);
         }
     }
 
