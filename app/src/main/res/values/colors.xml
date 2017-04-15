@@ -3,6 +3,7 @@
     <color name="red">#FF0000</color>
     <color name="black">#000000</color>
     <color name="grey">#CFCFCF</color>
+    <color name="white">#FFFFFF</color>
     <!-- A light Holo shade of blue -->
     <color name="holo_blue_light">#ff33b5e5</color>
     <!-- A light Holo shade of gray -->

@@ -21,6 +21,12 @@ public class ScannedDevice {
     /** last updated (Advertise scanned) */
     private long mLastUpdatedMs;
 
+    public double getDistance(){
+        int textPower=mIBeacon.getTxPower();
+        double rssi=mIBeacon.getRssi();
+        return mIBeacon.calculateAccuracy(textPower,rssi);
+    }
+
     public ScannedDevice(BluetoothDevice device, int rssi, byte[] scanRecord, long now) {
         if (device == null) {
             throw new IllegalArgumentException("BluetoothDevice is null");

@@ -1,8 +1,11 @@
 package upsoft.ble.iBeaconPos;
 
+import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import upsoft.ble.util.DataStore;
 import upsoft.ble.util.DateUtil;
 import upsoft.ble.util.ScannedDevice;
 import android.bluetooth.BluetoothDevice;
@@ -16,19 +19,26 @@ import android.widget.TextView;
 
 
 public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
-    private static final String PREFIX_RSSI = "接收信号强度:";
-    private static final String PREFIX_LASTUPDATED = "上次刷新时间:";
+    private static final String PREFIX_RSSI = "信号强度：";
+    private static final String PREFIX_LASTUPDATED = "上次刷新时间：";
     private List<ScannedDevice> mList;
     private LayoutInflater mInflater;
     private int mResId;
     private Context mContext;
+    private DataStore mDataStore;
 
-    public DeviceAdapter(Context context, int resId, List<ScannedDevice> objects) {
+    public DeviceAdapter(Context context, int resId, List<ScannedDevice> objects, DataStore dataStore) {
         super(context, resId, objects);
         mContext=context;
         mResId = resId;
         mList = objects;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mDataStore=dataStore;
+    }
+
+    String getDeviceName(int position){
+        String name=mList.get(position).getDisplayName();
+        return name;
     }
 
     @Override
@@ -38,14 +48,26 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
         if (convertView == null) {
             convertView = mInflater.inflate(mResId, null);
         }
+
+        TextView aliasName=(TextView)convertView.findViewById(R.id.device_alias_name);
+        String aliasStr= mDataStore.readData(getDeviceName(position));
+        aliasName.setText(aliasStr);
+
         TextView name = (TextView) convertView.findViewById(R.id.device_name);
         name.setText(item.getDisplayName());
+
         TextView address = (TextView) convertView.findViewById(R.id.device_address);
         address.setText(item.getDevice().getAddress());
+
         TextView rssi = (TextView) convertView.findViewById(R.id.device_rssi);
         rssi.setText(PREFIX_RSSI + Integer.toString(item.getRssi()));
+
         TextView lastupdated = (TextView) convertView.findViewById(R.id.device_lastupdated);
         lastupdated.setText(PREFIX_LASTUPDATED + DateUtil.get_yyyyMMddHHmmssSSS(item.getLastUpdatedMs()));
+
+        TextView distance=(TextView) convertView.findViewById(R.id.distance_tv);
+        DecimalFormat df=new DecimalFormat("0.00000");
+        distance.setText(df.format(item.getDistance()));
 
         TextView ibeaconInfo = (TextView) convertView.findViewById(R.id.device_ibeacon_info);
         Resources res = convertView.getContext().getResources();
@@ -57,6 +79,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
             ibeaconInfo.setText(res.getString(R.string.label_not_ibeacon));
             ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.red));
         }
+
         TextView scanRecord = (TextView) convertView.findViewById(R.id.device_scanrecord);
         scanRecord.setText(item.getScanRecordHexString());
 

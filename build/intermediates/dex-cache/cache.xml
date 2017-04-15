@@ -3,12 +3,12 @@
 
     <item
         is-multidex="false"
-        jar="E:\GitHub\iBeaconPos\app\libs\commons-io-2.4.jar"
+        jar="G:\GitHub\IndoorPos\app\libs\commons-io-2.4.jar"
         jumboMode="false"
         optimize="true"
         revision="25.0.0"
         sha1="b1b6ea3b7e4aa4f492509a4952029cd8e48019ad">
-        <dex dex="E:\GitHub\iBeaconPos\app\build\intermediates\pre-dexed\debug\commons-io-2.4_5568ff94e44b0d09e6f6aa35cfce193d9861bbaa.jar" />
+        <dex dex="G:\GitHub\IndoorPos\app\build\intermediates\pre-dexed\debug\commons-io-2.4_49491a6390f9120a67530e8a126a50c78c59ff26.jar" />
     </item>
 
 </items>

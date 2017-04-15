@@ -5,7 +5,7 @@ android {
     buildToolsVersion '25.0.0'
 
     defaultConfig {
-        applicationId "upsoft.ble.iBeaconPos"
+        applicationId "upsoft.ble.IndoorPos"
         minSdkVersion 18
         targetSdkVersion 22
     }

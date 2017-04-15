@@ -284,7 +284,7 @@ public class IBeacon {
         return sb.toString();
     }    
 
-    protected static double calculateAccuracy(int txPower, double rssi) {
+    public static double calculateAccuracy(int txPower, double rssi) {
         if (rssi == 0) {
             return -1.0; // if we cannot determine accuracy, return -1.
         }

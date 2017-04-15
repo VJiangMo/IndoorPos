@@ -21,7 +21,7 @@
             android:id="@+id/device_alias_name"
             android:layout_width="match_parent"
             android:gravity="center"
-            android:textColor="@color/grey"
+            android:textColor="@color/holo_orange_dark"
             android:text="@string/device_alias_str"
             android:background="@drawable/textview_bg"
             android:layout_height="wrap_content" />
@@ -60,6 +60,32 @@
         android:layout_height="wrap_content"
         android:gravity="left|center_vertical"
         android:textSize="14sp" />
+    <LinearLayout
+        android:id="@+id/distance_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:text="@string/juli_str"
+            android:textSize="14sp"/>
+        <TextView
+            android:id="@+id/distance_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textSize="14sp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left|center_vertical"
+            android:paddingLeft="5dp"
+            android:text="@string/juli_danwei_str"
+            android:textSize="14sp"/>
+    </LinearLayout>
+
     <TextView
         android:id="@+id/device_ibeacon_info"
         android:layout_width="match_parent"
