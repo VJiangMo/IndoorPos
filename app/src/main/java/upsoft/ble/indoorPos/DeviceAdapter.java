@@ -78,7 +78,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                     if (mList != null) {
                         for (ScannedDevice device : mList) {
                             long now = System.currentTimeMillis();
-                            if(now-device.getLastUpdatedMs()>5000){//说明蓝牙设备已经离线
+                            if(now-device.getLastUpdatedMs()>1000*10){//说明蓝牙设备已经离线
                                 deleteList.add(device);
                             }
                             if (device.getIBeacon() != null) {//当前蓝牙设备为ibeacon设备
@@ -102,7 +102,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                                 "mMinDistanceAlias:" + mMinDistanceAlias + "\r\n");
                     }
                     //判断是否播报
-                    if (mMinDistance < 1.0f && ibeaconCount > 0) {
+                    if (mMinDistance < 1.5f && ibeaconCount > 0) {
                         //刷新界面
                         Message msg = new Message();
                         msg.what = 0x0101;

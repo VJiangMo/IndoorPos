@@ -9,11 +9,15 @@ import upsoft.ble.util.DataStore;
 import upsoft.ble.util.OfflineSpeechUtil;
 import upsoft.ble.util.ScannedDevice;
 import upsoft.ble.widget.CustomDialog;
+
+import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.view.Menu;
@@ -41,6 +45,18 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
     private OfflineSpeechUtil mSpeechUtil;
     private TextView mLocationTv;
     private LocationHandler mLocationHandler;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // TODO request success
+                }
+                break;
+        }
+    }
 
     private class LocationHandler extends  Handler {
         public LocationHandler(){
@@ -99,6 +115,14 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
         setContentView(R.layout.activity_scan);
         mLocationTv=(TextView)findViewById(R.id.location_tv);
+
+        //android 6.0对蓝牙权限的处理
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // Android M Permission check
+            if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+            }
+        }
 
         init();
         startScan();//auto scan when inited.
