@@ -67,7 +67,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                 List<ScannedDevice> deleteList=new ArrayList<ScannedDevice>();
 
                 try {
-                    Thread.sleep(5100);//线程休眠5100ms
+                    Thread.sleep(5000);//线程休眠5000ms
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -102,7 +102,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                                 "mMinDistanceAlias:" + mMinDistanceAlias + "\r\n");
                     }
                     //判断是否播报
-                    if (mMinDistance < 1.5f && ibeaconCount > 0) {
+                    if (mMinDistance < 3.0f && ibeaconCount > 0) {
                         //刷新界面
                         Message msg = new Message();
                         msg.what = 0x0101;
