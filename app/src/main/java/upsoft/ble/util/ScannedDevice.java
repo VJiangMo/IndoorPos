@@ -45,8 +45,10 @@ public class ScannedDevice {
     private void checkIBeacon() {
         if (mScanRecord != null) {
             mIBeacon = IBeacon.fromScanData(mScanRecord, mRssi);
-            int textPower=mIBeacon.getTxPower();
-            mDistance= mIBeacon.calculateAccuracy(textPower,mRssi);
+            if(mIBeacon!=null){
+                int textPower=mIBeacon.getTxPower();
+                mDistance= mIBeacon.calculateAccuracy(textPower,mRssi);
+            }
         }
     }
 
