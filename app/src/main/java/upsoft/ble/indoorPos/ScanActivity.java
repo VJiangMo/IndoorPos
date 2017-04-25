@@ -6,10 +6,11 @@ import java.util.List;
 
 import upsoft.ble.util.BleUtil;
 import upsoft.ble.util.DataStore;
+import upsoft.ble.util.DateUtil;
+import upsoft.ble.util.NetHttpUtil;
 import upsoft.ble.util.OfflineSpeechUtil;
 import upsoft.ble.util.ScannedDevice;
 import upsoft.ble.widget.CustomDialog;
-
 import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -20,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,10 +34,13 @@ import android.os.Message;
 import android.view.KeyEvent;
 import android.widget.TextView;
 import android.widget.Toast;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import static upsoft.ble.util.OfflineSpeechUtil.singleton;
 
 public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCallback {
-
+    private String mTag=this.getClass().toString();
     private Context mContext;
     private BluetoothAdapter mBTAdapter;
     private DeviceAdapter mDeviceAdapter;
@@ -84,7 +89,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
                         List<ScannedDevice> deleteList=(List<ScannedDevice>)msg.obj;
                         String locationStr=mLocationTv.getText().toString();
                         for(ScannedDevice device:deleteList){
-                            String alias=mDataStore.readData(device.getDisplayName());
+                            String alias=mDataStore.readAlias(device.getDisplayName());
                             if(alias.equals(locationStr)){
                                 String unkownLocation=mContext.getResources().getString(R.string.unkown_location_str);
                                 showLocation(unkownLocation);
@@ -237,7 +242,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
 
     private void init() {
         mContext=this;
-        mDataStore=new DataStore(mContext);
+        mDataStore=DataStore.singleton(mContext);
         mLocationHandler=new LocationHandler();
         initSpeek();
 
@@ -264,19 +269,11 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
         mDeviceAdapter = new DeviceAdapter(this, R.layout.listitem_device,
                 new ArrayList<ScannedDevice>(),mSpeechUtil,mDataStore,mLocationHandler);
         deviceListView.setAdapter(mDeviceAdapter);
-        deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                String name=mDeviceAdapter.getDeviceName(position);
-                dialog(name);
-            }
-        });
         stopScan();
     }
 
     //初始化语音
     void initSpeek(){
-        //语音
         mSpeechUtil=singleton(mContext);
         new Thread(new Runnable() {
             @Override
@@ -289,37 +286,6 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
                 mSpeechUtil.play(R.string.welcome);
             }
         }).start();
-    }
-
-    // 弹窗
-    private void dialog(final String name) {
-        mCustomDialog = new CustomDialog(mContext);
-        final EditText editText = (EditText) mCustomDialog.getEditText();//方法在CustomDialog中实现
-        mCustomDialog.setOnPositiveListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //dosomething
-                String deviceAliasName=editText.getText().toString();
-                HashMap<String,String> dataMap=new HashMap<String, String>();
-                if(!deviceAliasName.isEmpty()){
-                    String speakContent=mContext.getResources().getString(R.string.now_device_alias_name)+deviceAliasName;
-                    mSpeechUtil.play(speakContent);
-                    dataMap.put(name,deviceAliasName);
-                }
-                if(dataMap.size()>0){
-                    mDataStore.writeData(dataMap);
-                }
-                mCustomDialog.dismiss();
-            }
-        });
-
-        mCustomDialog.setOnNegativeListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCustomDialog.dismiss();
-            }
-        });
-        mCustomDialog.show();
     }
 
     private void startScan() {
@@ -341,5 +307,4 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
         setProgressBarIndeterminateVisibility(false);
         invalidateOptionsMenu();
     }
-
 }

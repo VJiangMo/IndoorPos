@@ -17,8 +17,16 @@ public class DataStore {
     private Context mContext;
     private SharedPreferences mSharedPreferences;
     private SharedPreferences.Editor mEditor;
+    private static DataStore mDataStore;
 
-    public DataStore(Context ctx){
+    public static DataStore singleton(Context ctx){
+        if(null==mDataStore){
+            mDataStore=new DataStore(ctx);
+        }
+        return mDataStore;
+    }
+
+    private DataStore(Context ctx){
         mContext=ctx;
         mSharedPreferences=mContext.getSharedPreferences("IndoorPosData",
                 Context.MODE_PRIVATE);
@@ -36,8 +44,18 @@ public class DataStore {
         mEditor.commit();
     }
 
-    public String readData(String key){
+    public void writeData(String key,String value){
+        mEditor.putString(key, value);
+        mEditor.commit();
+    }
+
+    public String readAlias(String key){
         String res=mSharedPreferences.getString(key,mContext.getResources().getString(R.string.unkown_location_str));
+        return res;
+    }
+
+    public String readData(String key){
+        String res=mSharedPreferences.getString(key,"");
         return res;
     }
 }

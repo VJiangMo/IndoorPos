@@ -29,4 +29,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.2.0'
     compile files('libs/usc.jar')
     compile 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
+    compile 'org.json:json:20160810'
 }

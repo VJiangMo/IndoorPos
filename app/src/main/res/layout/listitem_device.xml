@@ -94,12 +94,12 @@
         android:gravity="left|center_vertical"
         android:textColor="@android:color/holo_blue_dark"
         android:textSize="14sp" />
-    <TextView
-        android:id="@+id/device_scanrecord"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:lines="3"
-        android:gravity="left|center_vertical"
-        android:textColor="@android:color/darker_gray"
-        android:textSize="14sp" />
+    <!--<TextView-->
+        <!--android:id="@+id/device_scanrecord"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:lines="3"-->
+        <!--android:gravity="left|center_vertical"-->
+        <!--android:textColor="@android:color/darker_gray"-->
+        <!--android:textSize="14sp" />-->
 </LinearLayout>

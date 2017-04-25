@@ -23,4 +23,7 @@
     <!-- Scan -->
     <string name="action_scan">搜索</string>
     <string name="action_stop">停止</string>
+
+    <!--http post-->
+    <string name="url">http://172.168.101.11:8081/mobile-webservice/</string>
 </resources>

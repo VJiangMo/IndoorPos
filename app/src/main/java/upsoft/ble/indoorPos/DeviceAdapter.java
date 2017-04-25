@@ -7,11 +7,13 @@ import java.util.Comparator;
 import java.util.List;
 import upsoft.ble.util.DataStore;
 import upsoft.ble.util.DateUtil;
+import upsoft.ble.util.NetHttpUtil;
 import upsoft.ble.util.OfflineSpeechUtil;
 import upsoft.ble.util.ScannedDevice;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -20,9 +22,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 
 public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
+    private String mTag=this.getClass().toString();
     private static final String PREFIX_RSSI = "信号强度：";
     private static final String PREFIX_LASTUPDATED = "上次刷新时间：";
     private List<ScannedDevice> mList;
@@ -33,6 +40,124 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
     private OfflineSpeechUtil mSpeechUtil;
     private LocationThread mLocationThread;//定位线程
     private Handler mLocationHandler;
+    private HttpPostHdl mHttpPostHdl;
+    private NetHttpUtil mNetHttpUtil;
+    private int updataCount=0;
+
+    private class HttpPostHdl extends Handler{
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            int msgId=msg.what;
+            Bundle jsonBundle=(Bundle)msg.obj;
+            String jsonStr=jsonBundle.getString("resJson");
+            Log.d(mTag,"result json:"+jsonStr);
+
+            switch (msgId){
+                case 0x0101:{
+                    try {
+                        JSONObject jobj=new JSONObject(jsonStr);
+                        if(jobj.has("result")){
+                            String loginResult=jobj.getString("result");
+                            if(!loginResult.equals("1")){//up data fail
+                                String reasonStr=jobj.getString("reason");
+                                Toast.makeText(mContext,"up_data fail:"+reasonStr,Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+                case 0x0102:{
+                    try {
+                        JSONObject jobj=new JSONObject(jsonStr);
+                        if(jobj.has("result")){
+                            String loginResult=jobj.getString("result");
+                            if(!loginResult.equals("1")){//up data fail
+                                String reasonStr=jobj.getString("reason");
+                                Toast.makeText(mContext,"down_data fail:"+reasonStr,Toast.LENGTH_SHORT).show();
+                            }else {
+                                String down_data=jobj.getString("down_data");
+                                JSONObject data=new JSONObject(down_data);
+                                String uuid_str=data.getString("uuid");
+                                String alias_str=data.getString("alias");
+                                mDataStore.writeData(uuid_str,alias_str);
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    //down_data api
+    private void down_data(final String uuid_str){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                JSONObject jsonData=new JSONObject();
+                try {
+                    jsonData.put("user",mDataStore.readData("usr"));
+                    jsonData.put("uuid",uuid_str);
+
+                    String jsonStr=jsonData.toString();
+                    Log.d(mTag,"down_data param json:"+jsonStr);
+                    String urlStr=getResStr(R.string.url)+"down_data";
+                    String resJson=mNetHttpUtil.getHttpPostData(urlStr,jsonData);
+                    if(!resJson.equals("")){
+                        Bundle dataBundle=new Bundle();
+                        dataBundle.putString("resJson",resJson);
+                        Message msg=new Message();
+                        msg.what=0x0102;
+                        msg.obj=dataBundle;
+                        mHttpPostHdl.sendMessage(msg);
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    //up_data api
+    private void up_data(final String uuid_str, final String alias_name, final String distance){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                JSONObject jsonData=new JSONObject();
+                try {
+                    jsonData.put("user",mDataStore.readData("usr"));
+                    jsonData.put("uuid",uuid_str);
+                    jsonData.put("alias",alias_name);
+                    jsonData.put("up_time", DateUtil.get_yyyyMMddHHmmssSSS(System.currentTimeMillis()));
+                    jsonData.put("distance",distance);
+
+                    String jsonStr=jsonData.toString();
+                    Log.d(mTag,"up_data param json:"+jsonStr);
+                    String urlStr=getResStr(R.string.url)+"up_data";
+                    String resJson=mNetHttpUtil.getHttpPostData(urlStr,jsonData);
+                    if(!resJson.equals("")){
+                        Bundle dataBundle=new Bundle();
+                        dataBundle.putString("resJson",resJson);
+                        Message msg=new Message();
+                        msg.what=0x0101;
+                        msg.obj=dataBundle;
+                        mHttpPostHdl.sendMessage(msg);
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
+    private String getResStr(int resId){
+        return mContext.getResources().getString(resId);
+    }
 
     public void startLocationThread(){
         mLocationThread.startRun();
@@ -44,7 +169,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
 
     private class LocationThread extends Thread{
         private boolean mRunFlag=true;
-        private double mMinDistance=0.0f;//0米
+        private double mMinDistance=0.0f;
         private String mMinDistanceAlias="";
         private String mLastSpeakContent="";
         private boolean mIsWait0=false;
@@ -89,17 +214,14 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                                         "deviceName:" + deviceName + "\n");
                                 if (mMinDistance < 0.00001f) {
                                     mMinDistance = deviceDistance;
-                                    mMinDistanceAlias = mDataStore.readData(deviceName);
+                                    mMinDistanceAlias = mDataStore.readAlias(deviceName);
                                 }
                                 if (mMinDistance > deviceDistance) {
                                     mMinDistance = deviceDistance;
-                                    mMinDistanceAlias = mDataStore.readData(deviceName);
+                                    mMinDistanceAlias = mDataStore.readAlias(deviceName);
                                 }
                             }
                         }
-                        Log.d("++", "-------------------");
-                        Log.d("++++++minDistance", "mMinDistance:" + mMinDistance + ",\n" +
-                                "mMinDistanceAlias:" + mMinDistanceAlias + "\r\n");
                     }
                     //判断是否播报
                     if (mMinDistance < 4.0f && ibeaconCount > 0) {
@@ -174,6 +296,8 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                          OfflineSpeechUtil speech, DataStore dataStore,Handler handler) {
         super(context, resId, objects);
         mContext=context;
+        mHttpPostHdl=new HttpPostHdl();
+        mNetHttpUtil=new NetHttpUtil(mContext,mHttpPostHdl);
         mResId = resId;
         mList = objects;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -202,7 +326,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
             holder = (ViewHolder)convertView.getTag();
         }
 
-        String aliasStr= mDataStore.readData(getDeviceName(position));
+        String aliasStr= mDataStore.readAlias(getDeviceName(position));
         holder.aliasName.setText(aliasStr);
         holder.name.setText(item.getDisplayName());
         holder.address.setText(item.getDevice().getAddress());
@@ -216,12 +340,19 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
             holder.ibeaconInfo.setText(res.getString(R.string.label_ibeacon) + "\n"
                     + item.getIBeacon().toString());
             holder.ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.holo_blue_dark));
+            updataCount++;
+            if(1==updataCount){
+                up_data(item.getDisplayName(),aliasStr,Double.toString(item.getDistance()));
+                //updataCount=0;
+            }
+            if(aliasStr.equals(getResStr(R.string.unkown_location_str))){
+                down_data(item.getDisplayName());
+            }
         } else {
             holder.ibeaconInfo.setText(res.getString(R.string.label_not_ibeacon));
             holder.ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.red));
         }
-        holder.scanRecord.setText(item.getScanRecordHexString());
-
+        //holder.scanRecord.setText(item.getScanRecordHexString());
         return convertView;
     }
 
@@ -233,7 +364,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
         public TextView lastupdated;
         public TextView distance;
         public TextView ibeaconInfo;
-        public TextView scanRecord;
+        //public TextView scanRecord;
 
         public ViewHolder(View convertView){
             aliasName=(TextView)convertView.findViewById(R.id.device_alias_name);
@@ -243,7 +374,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
             lastupdated= (TextView) convertView.findViewById(R.id.device_lastupdated);
             distance=(TextView) convertView.findViewById(R.id.distance_tv);
             ibeaconInfo = (TextView) convertView.findViewById(R.id.device_ibeacon_info);
-            scanRecord = (TextView) convertView.findViewById(R.id.device_scanrecord);
+            //scanRecord = (TextView) convertView.findViewById(R.id.device_scanrecord);
         }
     }
 
