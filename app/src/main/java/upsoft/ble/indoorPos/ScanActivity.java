@@ -1,16 +1,13 @@
 package upsoft.ble.indoorPos;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import upsoft.ble.util.BleUtil;
 import upsoft.ble.util.DataStore;
-import upsoft.ble.util.DateUtil;
-import upsoft.ble.util.NetHttpUtil;
 import upsoft.ble.util.OfflineSpeechUtil;
 import upsoft.ble.util.ScannedDevice;
-import upsoft.ble.widget.CustomDialog;
+
 import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -21,21 +18,15 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.Window;
-import android.widget.AdapterView;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.os.Handler;
 import android.os.Message;
 import android.view.KeyEvent;
 import android.widget.TextView;
 import android.widget.Toast;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import static upsoft.ble.util.OfflineSpeechUtil.singleton;
 
@@ -45,7 +36,6 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
     private BluetoothAdapter mBTAdapter;
     private DeviceAdapter mDeviceAdapter;
     private boolean mIsScanning;
-    private CustomDialog mCustomDialog;
     private DataStore mDataStore;
     private OfflineSpeechUtil mSpeechUtil;
     private TextView mLocationTv;
@@ -86,9 +76,9 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
                 }
                 case 0x0103:{
                     if(mDeviceAdapter!=null){
-                        List<ScannedDevice> deleteList=(List<ScannedDevice>)msg.obj;
+                        List<ScannedDevice> offlineDeviceList=(List<ScannedDevice>)msg.obj;
                         String locationStr=mLocationTv.getText().toString();
-                        for(ScannedDevice device:deleteList){
+                        for(ScannedDevice device:offlineDeviceList){
                             String alias=mDataStore.readAlias(device.getDisplayName());
                             if(alias.equals(locationStr)){
                                 String unkownLocation=mContext.getResources().getString(R.string.unkown_location_str);
@@ -96,7 +86,7 @@ public class ScanActivity extends Activity implements BluetoothAdapter.LeScanCal
                                 break;
                             }
                         }
-                        mDeviceAdapter.removeList(deleteList);
+                        mDeviceAdapter.removeList(offlineDeviceList);
                     }
                     break;
                 }

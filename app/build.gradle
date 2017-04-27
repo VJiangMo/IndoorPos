@@ -8,6 +8,8 @@ android {
         applicationId "upsoft.ble.IndoorPos"
         minSdkVersion 18
         targetSdkVersion 25
+        versionCode 3
+        versionName "2.1"
     }
 
     buildTypes {

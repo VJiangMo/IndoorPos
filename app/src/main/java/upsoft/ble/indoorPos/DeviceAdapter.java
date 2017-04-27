@@ -24,6 +24,8 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.upsoft.ibeacon.IBeacon;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,14 +36,14 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
     private static final String PREFIX_LASTUPDATED = "上次刷新时间：";
     private List<ScannedDevice> mList;
     private LayoutInflater mInflater;
-    private int mResId;
     private Context mContext;
     private DataStore mDataStore;
     private OfflineSpeechUtil mSpeechUtil;
-    private LocationThread mLocationThread;//定位线程
+    private LocationThread mLocationThread;
     private Handler mLocationHandler;
     private HttpPostHdl mHttpPostHdl;
     private NetHttpUtil mNetHttpUtil;
+    private int mResId;
     private int updataCount=0;
 
     private class HttpPostHdl extends Handler{
@@ -189,7 +191,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
             while(true) {
                 mMinDistance = 0.0f;
                 mMinDistanceAlias = mContext.getResources().getString(R.string.unkown_location_str);
-                List<ScannedDevice> deleteList=new ArrayList<ScannedDevice>();
+                List<ScannedDevice> offlineDeviceList=new ArrayList<ScannedDevice>();
 
                 try {
                     Thread.sleep(1000);//线程休眠1000ms
@@ -204,7 +206,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                         for (ScannedDevice device : mList) {
                             long now = System.currentTimeMillis();
                             if(now-device.getLastUpdatedMs()>1000*10){//说明蓝牙设备已经离线
-                                deleteList.add(device);
+                                offlineDeviceList.add(device);
                             }
                             if (device.getIBeacon() != null) {//当前蓝牙设备为ibeacon设备
                                 ibeaconCount++;
@@ -276,10 +278,10 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                         }
                     }
                     //判断是否要清除数据
-                    if(deleteList.size()>0){
+                    if(offlineDeviceList.size()>0){
                         Message msg = new Message();
                         msg.what = 0x0103;
-                        msg.obj=deleteList;
+                        msg.obj=offlineDeviceList;
                         mLocationHandler.sendMessage(msg);
                     }
                 }
@@ -287,8 +289,8 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
         }
     }
 
-    public void removeList(List<ScannedDevice> deleteList){
-        mList.removeAll(deleteList);
+    public void removeList(List<ScannedDevice> offlineDeviceList){
+        mList.removeAll(offlineDeviceList);
         notifyDataSetChanged();
     }
 
@@ -299,7 +301,7 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
         mHttpPostHdl=new HttpPostHdl();
         mNetHttpUtil=new NetHttpUtil(mContext,mHttpPostHdl);
         mResId = resId;
-        mList = objects;
+        mList=objects;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mSpeechUtil=speech;
         mDataStore=dataStore;
@@ -325,6 +327,12 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
         }else {
             holder = (ViewHolder)convertView.getTag();
         }
+        updataCount++;
+
+        IBeacon iBeacon=item.getIBeacon();
+        if(iBeacon!=null&&updataCount%20==0){
+            down_data(item.getDisplayName());
+        }
 
         String aliasStr= mDataStore.readAlias(getDeviceName(position));
         holder.aliasName.setText(aliasStr);
@@ -336,17 +344,13 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
         holder.distance.setText(df.format(item.getDistance()));
 
         Resources res = convertView.getContext().getResources();
-        if (item.getIBeacon() != null) {
+        if (iBeacon != null) {
             holder.ibeaconInfo.setText(res.getString(R.string.label_ibeacon) + "\n"
-                    + item.getIBeacon().toString());
+                    + iBeacon.toString());
             holder.ibeaconInfo.setTextColor(mContext.getResources().getColor(R.color.holo_blue_dark));
-            updataCount++;
-            if(1==updataCount){
+            if(updataCount>=40){
                 up_data(item.getDisplayName(),aliasStr,Double.toString(item.getDistance()));
-                //updataCount=0;
-            }
-            if(aliasStr.equals(getResStr(R.string.unkown_location_str))){
-                down_data(item.getDisplayName());
+                updataCount=0;
             }
         } else {
             holder.ibeaconInfo.setText(res.getString(R.string.label_not_ibeacon));
@@ -381,20 +385,20 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
     /**
      * add or update BluetoothDevice List
      * 
-     * @param newDevice Scanned Bluetooth Device
+     * @param newBluetoothDevice Scanned Bluetooth Device
      * @param rssi RSSI
      * @param scanRecord advertise data
      * @return summary ex. "iBeacon:3 (Total:10)"
      */
-    public String update(BluetoothDevice newDevice, int rssi, byte[] scanRecord) {
-        if ((newDevice == null) || (newDevice.getAddress() == null)) {
+    public String update(BluetoothDevice newBluetoothDevice, int rssi, byte[] scanRecord) {
+        if ((newBluetoothDevice == null) || (newBluetoothDevice.getAddress() == null)) {
             return "";
         }
         long now = System.currentTimeMillis();
 
         boolean contains = false;
         for (ScannedDevice device : mList) {
-            if (newDevice.getAddress().equals(device.getDevice().getAddress())) {
+            if (newBluetoothDevice.getAddress().equals(device.getDevice().getAddress())) {
                 contains = true;
                 // update
                 device.setRssi(rssi);
@@ -403,9 +407,13 @@ public class DeviceAdapter extends ArrayAdapter<ScannedDevice> {
                 break;
             }
         }
+
         if (!contains) {
             // add new BluetoothDevice
-            mList.add(new ScannedDevice(newDevice, rssi, scanRecord, now));
+            ScannedDevice newScanDevice=new ScannedDevice(newBluetoothDevice, rssi, scanRecord, now);
+            if(newScanDevice.getIBeacon()!=null){//仅仅添加定位设备(ibeacon)，过滤掉其他设备(ibeacon)
+                mList.add(newScanDevice);
+            }
         }
 
         // sort by RSSI

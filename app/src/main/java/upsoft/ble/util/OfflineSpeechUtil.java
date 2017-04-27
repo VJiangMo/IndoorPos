@@ -15,6 +15,7 @@ import static java.lang.Thread.sleep;
  */
 
 public class OfflineSpeechUtil implements TTSPlayerListener {
+    private String mTag=this.getClass().toString();
     public static final String appKey = "_appKey_";
     public static final String  secret = "_secret_";
     private ITTSControl mTTSPlayer;
@@ -55,6 +56,23 @@ public class OfflineSpeechUtil implements TTSPlayerListener {
         mTTSPlayer.stop();
     }
 
+    // 判断一个字符是否是中文
+    public boolean isChineseChar(char c) {
+        return c >= 0x4E00 &&  c <= 0x9FA5;// 根据字节码判断
+    }
+    // 判断一个字符串是否含有中文
+    public boolean isChineseStr(String str) {
+        if (str == null) return false;
+        for (char c : str.toCharArray()) {
+            if (isChineseChar(c)){
+                continue;
+            }else {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * 播放
      *
@@ -62,7 +80,13 @@ public class OfflineSpeechUtil implements TTSPlayerListener {
      * @date 2015-4-14 下午7:29:24
      */
     public void play(final String content) {
-        mTTSPlayer.play(content);
+        boolean isMatch= isChineseStr(content);
+        if(isMatch){
+            Log.d(mTag,"——>play audio.content is:"+content);
+            mTTSPlayer.play(content);
+        }else {
+            Log.d(mTag,"——>Don't play audio.content is:"+content);
+        }
     }
 
     public void play(int resId){
